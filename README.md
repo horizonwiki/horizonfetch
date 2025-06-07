@@ -1,1 +1,1 @@
-# horizonfetch (hfetch)
+# horizonfetch (hf)
