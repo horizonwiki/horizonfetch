@@ -1,6 +1,6 @@
 [package]
 name = "horizonfetch"
-version = "0.3.0"
+version = "0.3.5"
 edition = "2021"
 
 [target.x86_64-pc-windows-msvc]
