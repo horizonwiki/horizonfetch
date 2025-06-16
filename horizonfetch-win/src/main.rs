@@ -1,6 +1,7 @@
-// HorizonFetch (hf) || tg: @xd_sergii || github: https://github.com/horizonl1nux/horizonfetch || v0.3 || 09.06.2025
+// HorizonFetch (hf) || tg: @xd_sergii || github: https://github.com/horizonl1nux/horizonfetch || v0.3.5-2 || 16.06.2025
 use std::{fs, env, io};
 use std::io::stdout;
+use std::collections::HashMap;
 use crossterm::{execute, cursor::MoveTo, style::Print};
 use crossterm::terminal::{Clear, ClearType};
 use once_cell::sync::Lazy;
@@ -11,11 +12,10 @@ use winreg::RegKey;
 use windows::{
     core::{PWSTR, PCWSTR},
     Win32::{
-        Foundation::{WIN32_ERROR, CloseHandle},
+        Foundation::CloseHandle,
         System::{
             SystemInformation::{GetComputerNameExW, COMPUTER_NAME_FORMAT, GetTickCount64, MEMORYSTATUSEX, GlobalMemoryStatusEx},
             WindowsProgramming::GetUserNameW,
-            Registry::{RegGetValueW, RRF_RT_REG_SZ, HKEY_LOCAL_MACHINE as WHKEY_LOCAL_MACHINE},
             Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ},
             Diagnostics::ToolHelp::{
                 CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
@@ -39,10 +39,24 @@ struct Config {
     color: String,
     info_color: String,
     title_color: String,
-    vram_show_gb: bool,
+    show_user: bool,
+    show_os: bool,
+    show_uptime: bool,
+    show_shell: bool,
+    show_de: bool,
+    show_screen: bool,
+    show_motherboard: bool,
+    show_cpu: bool,
+    show_gpu: bool,
+    show_ram: bool,
+    show_swap: bool,
+    show_locale: bool,
+    show_disk: bool,
+    show_vram_gb: bool,
     show_ram_ext_info: bool,
-    show_disk_info: bool,
+    show_color_scheme: bool,
 }
+
 #[derive(Deserialize, Debug)]
 struct PhysicalMemory {
     #[serde(rename = "Capacity")]
@@ -50,6 +64,7 @@ struct PhysicalMemory {
     #[serde(rename = "Speed")]
     speed: Option<u32>,
 }
+
 // default ascii
 const DEFAULT_ASCII: &str = r#"
 
@@ -57,7 +72,7 @@ const DEFAULT_ASCII: &str = r#"
   1111111  1111111
   1111111  1111111
   1111111  1111111
-
+ㅤ
   1111111  1111111
   1111111  1111111
   1111111  11111;.
@@ -83,9 +98,22 @@ impl Default for Config {
             color: "34".to_string(),
             info_color: "38;5;117".to_string(),
             title_color: "38;5;110".to_string(),
-            vram_show_gb: false,
+            show_user: true,
+            show_os: true,
+            show_uptime: true,
+            show_shell: true,
+            show_de: true,
+            show_screen: true,
+            show_motherboard: true,
+            show_cpu: true,
+            show_gpu: true,
+            show_ram: true,
+            show_swap: true,
+            show_locale: true,
+            show_disk: true,
+            show_vram_gb: false,
             show_ram_ext_info: false,
-            show_disk_info: false,
+            show_color_scheme: true,
         }
     }
 }
@@ -97,10 +125,23 @@ impl Config {
         let color = extract_color_param(&content, "ascii_color").unwrap_or("34").to_string();
         let info_color = extract_color_param(&content, "info_color").unwrap_or("38;5;117").to_string();
         let title_color = extract_color_param(&content, "title_color").unwrap_or("38;5;110").to_string();  
-        let vram_show_gb = extract_color_param(&content, "vram_show_gb").map_or(false, |v| v == "true");
+        let show_user = extract_color_param(&content, "show_user").map_or(true, |v| v == "true");
+        let show_os = extract_color_param(&content, "show_os").map_or(true, |v| v == "true");
+        let show_uptime = extract_color_param(&content, "show_uptime").map_or(true, |v| v == "true");
+        let show_shell = extract_color_param(&content, "show_shell").map_or(true, |v| v == "true");
+        let show_de = extract_color_param(&content, "show_de").map_or(true, |v| v == "true");
+        let show_screen = extract_color_param(&content, "show_screen").map_or(true, |v| v == "true");
+        let show_motherboard = extract_color_param(&content, "show_motherboard").map_or(true, |v| v == "true");
+        let show_cpu = extract_color_param(&content, "show_cpu").map_or(true, |v| v == "true");
+        let show_gpu = extract_color_param(&content, "show_gpu").map_or(true, |v| v == "true");
+        let show_ram = extract_color_param(&content, "show_ram").map_or(true, |v| v == "true");
+        let show_swap = extract_color_param(&content, "show_swap").map_or(true, |v| v == "true");
+        let show_locale = extract_color_param(&content, "show_locale").map_or(true, |v| v == "true");
+        let show_disk = extract_color_param(&content, "show_disk").map_or(true, |v| v == "true");
+        let show_vram_gb = extract_color_param(&content, "show_vram_gb").map_or(false, |v| v == "true");
         let show_ram_ext_info = extract_color_param(&content, "show_ram_ext_info").map_or(false, |v| v == "true");
-        let show_disk_info = extract_color_param(&content, "show_disk_info").map_or(false, |v| v == "true");
-    Ok(Config { ascii_art, color, info_color, title_color, vram_show_gb, show_ram_ext_info, show_disk_info })
+        let show_color_scheme = extract_color_param(&content, "show_color_scheme").map_or(true, |v| v == "true");
+    Ok(Config { ascii_art, color, info_color, title_color, show_user, show_os, show_uptime, show_shell, show_de, show_screen, show_motherboard, show_cpu, show_gpu, show_ram, show_swap, show_locale, show_disk, show_vram_gb, show_ram_ext_info, show_color_scheme })
     }
 }
 
@@ -180,29 +221,18 @@ fn get_hostname() -> String {
 }
 
 fn get_windows_edition() -> windows::core::Result<String> {
-    let mut buffer = [0u16; 128];
-    let mut size = (buffer.len() * 2) as u32;
-    let status = unsafe {
-    RegGetValueW(
-        WHKEY_LOCAL_MACHINE,
-        PCWSTR::from_raw(
-            "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\0"
-                .encode_utf16()
-                .collect::<Vec<u16>>()
-                .as_ptr(),
-        ),
-        PCWSTR::from_raw("ProductName\0".encode_utf16().collect::<Vec<u16>>().as_ptr()),
-        RRF_RT_REG_SZ,
-        None,
-        Some(buffer.as_mut_ptr() as *mut _),
-        Some(&mut size),
-    )
-};
-    if status == WIN32_ERROR(0) {
-        Ok(String::from_utf16_lossy(&buffer[..size as usize / 2]).trim().to_string())
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = hklm.open_subkey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion")
+        .map_err(|_| windows::core::Error::from_win32())?;
+    let product_name: String = key.get_value("ProductName").unwrap_or_default();
+    let build_number: String = key.get_value("CurrentBuildNumber").unwrap_or_default();
+
+    let name = if build_number.parse::<u32>().unwrap_or(0) >= 22000 {
+        product_name.replace("Windows 10", "Windows 11")
     } else {
-        Err(windows::core::Error::from_win32())
-    }
+        product_name
+    };
+    Ok(name)
 }
 
 fn detect_shell() -> Result<String, ()> {
@@ -244,6 +274,19 @@ fn get_screen_resolution(device_name: PCWSTR) -> Option<(u32, u32, u32)> {
     unsafe {
         if EnumDisplaySettingsW(device_name, ENUM_CURRENT_SETTINGS, &mut devmode).as_bool() {
             return Some((devmode.dmPelsWidth, devmode.dmPelsHeight, devmode.dmDisplayFrequency));
+        }
+    }
+    None
+}
+
+fn get_motherboard_name() -> Option<String> {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    if let Ok(key) = hklm.open_subkey("HARDWARE\\DESCRIPTION\\System\\BIOS") {
+        if let Ok(product) = key.get_value::<String, _>("BaseBoardProduct") {
+            let trimmed = product.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
         }
     }
     None
@@ -369,8 +412,8 @@ fn main() -> io::Result<()> {
 });
 
     execute!(stdout(), Clear(ClearType::All)).unwrap();
-    let art_width = CONFIG.ascii_art.lines().map(|l| l.len()).max().unwrap_or(0) + 2;
-    let mut info_y = 1;
+    let _art_width = CONFIG.ascii_art.lines().map(|l| l.len()).max().unwrap_or(0) + 2;
+    let mut _info_y = 1;
     let color = if is_valid_ansi_code(&CONFIG.color) {
         CONFIG.color.as_str()
     } else {
@@ -386,17 +429,34 @@ fn main() -> io::Result<()> {
     } else {
         "38;5;110"
     };
+    let ascii_lines: Vec<_> = CONFIG.ascii_art.lines().collect();
+    let max_art_line_len = ascii_lines.iter()
+    .map(|line| {
+        let v = strip_ansi_escapes::strip(line.as_bytes());
+        String::from_utf8(v)
+            .map(|s| s.chars().count())
+            .unwrap_or_else(|_| line.chars().count())
+    })
+    .max()
+    .unwrap_or(0);
+
+    let art_width = max_art_line_len + 3;
 
     let mut y = 0;
     for line in CONFIG.ascii_art.lines() {
+    let trimmed_line = line.trim_end();
+    if !trimmed_line.is_empty() {
         execute!(
             io::stdout(),
-            MoveTo(0, y),
-            Print(format!("\x1b[{}m{}\x1b[0m", color, line))
+            MoveTo(0, y as u16),
+            Print(format!("\x1b[{}m{}\x1b[0m", color, trimmed_line))
         )?;
         y += 1;
     }
+}
 
+    let mut info_y = 0;
+    if CONFIG.show_user {
     let username = get_username();
     let hostname = get_hostname();
     execute!(
@@ -412,7 +472,9 @@ fn main() -> io::Result<()> {
         Print(format!("\x1b[97m-------\x1b[0m"))
     )?;
     info_y += 1;
+}
 
+    if CONFIG.show_os {
     let edition = get_windows_edition()?;
     execute!(
     io::stdout(),
@@ -420,7 +482,8 @@ fn main() -> io::Result<()> {
     Print(format!("\x1b[{}mOS:\x1b[0m \x1b[{}m{}\x1b[0m", title_color, info_color, edition)),
     )?;
     info_y += 1;
-
+}
+    if CONFIG.show_uptime {
     let uptime_ms = unsafe { GetTickCount64() };
     let uptime_sec = uptime_ms / 1000;
     let uptime_min = uptime_sec / 60;
@@ -443,10 +506,12 @@ fn main() -> io::Result<()> {
         Print(uptime_str)
     )?;
     info_y += 1;
+}
 
+    if CONFIG.show_shell {
     let shell_str = match detect_shell() {
-        Ok(shell) => format!("\x1b[{}mShell:\x1b[0m \x1b[{}m{}\x1b[0m", title_color, info_color, shell),
-        Err(_) => "Shell: CMD".to_string(),
+    Ok(shell) => format!("\x1b[{}mShell:\x1b[0m \x1b[{}m{}\x1b[0m", title_color, info_color, shell),
+    Err(_) => "Shell: CMD".to_string(),
     };
     execute!(
         io::stdout(),
@@ -454,14 +519,18 @@ fn main() -> io::Result<()> {
         Print(shell_str)
     )?;
     info_y += 1;
+}  
 
+    if CONFIG.show_de {
     execute!(
         io::stdout(),
         MoveTo(art_width as u16, info_y),
         Print(format!("\x1b[{}mDE:\x1b[0m \x1b[{}mFluent\x1b[0m", title_color, info_color))
     )?;
     info_y += 1;
+}
 
+    if CONFIG.show_screen {
     let mut device_index = 0;
     while let Ok(device) = enum_display_device(device_index) {
         if device.StateFlags.0 & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP.0 != 0 {
@@ -470,24 +539,61 @@ fn main() -> io::Result<()> {
                 execute!(
                     io::stdout(),
                     MoveTo(art_width as u16, info_y),
-                    Print(format!("\x1b[{}mScreen:\x1b[0m \x1b[{}m{}\x1b[0m\x1b[97mx\x1b[0m\x1b[{}m{}\x1b[0m \x1b[97m@\x1b[0 \x1b[{}m {}Hz\x1b[0m",title_color, info_color, width, info_color, height, info_color, refresh_rate))
+                    Print(format!(
+                        "\x1b[{}mScreen:\x1b[0m \x1b[{}m{}\x1b[0m\x1b[97mx\x1b[0m\x1b[{}m{}\x1b[0m \x1b[97m@\x1b[0m \x1b[{}m{}Hz\x1b[0m",
+                        title_color, info_color, width, info_color, height, info_color, refresh_rate
+                    ))
                 )?;
                 info_y += 1;
             }
         }
         device_index += 1;
-    }
-
-    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let cpu_key = hklm.open_subkey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0")?;
-    let cpu_name: String = cpu_key.get_value("ProcessorNameString")?;
+    }}
+    if CONFIG.show_motherboard {
     execute!(
         io::stdout(),
         MoveTo(art_width as u16, info_y),
-        Print(format!("\x1b[{}mCpu:\x1b[0m \x1b[{}m{}\x1b[0m",title_color, info_color, cpu_name.trim()))
+        Print(format!(
+            "\x1b[{}mMotherboard:\x1b[0m \x1b[{}m{}\x1b[0m",
+            title_color, info_color, get_motherboard_name().unwrap_or_else(|| "Unknown".to_string())
+        ))
     )?;
     info_y += 1;
+}
 
+    if CONFIG.show_cpu {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let cpus_key = hklm.open_subkey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor")?;
+    let mut cpu_map: HashMap<String, usize> = HashMap::new();
+
+    for cpu_index in cpus_key.enum_keys().flatten() {
+        if let Ok(cpu_key) = cpus_key.open_subkey(&cpu_index) {
+            if let Ok(cpu_name) = cpu_key.get_value::<String, _>("ProcessorNameString") {
+                let name = cpu_name.trim().to_string();
+                    *cpu_map.entry(name).or_insert(0) += 1;
+        }
+    }
+}
+    let cpu_str = cpu_map
+    .iter()
+    .map(|(name, count)| {
+        if *count > 1 {
+            format!("{} ({} threads)", name, count)
+     } else {
+            name.clone()
+            }})
+    .collect::<Vec<_>>()
+    .join("\n     ");
+
+    execute!(
+    io::stdout(),
+    MoveTo(art_width as u16, info_y),
+    Print(format!("\x1b[{}mCpu:\x1b[0m \x1b[{}m{}\x1b[0m", title_color, info_color, cpu_str))
+)?;
+    info_y += cpu_map.len() as u16;
+}
+
+    if CONFIG.show_gpu {
     unsafe {
     let dxgi_factory: IDXGIFactory1 = CreateDXGIFactory1()?;
     let mut i = 0;
@@ -502,7 +608,7 @@ fn main() -> io::Result<()> {
             .collect();
         if !gpu_name.contains("Microsoft Basic Render Driver") {
     let vram_gb = desc.DedicatedVideoMemory as f64 / (1024.0 * 1024.0 * 1024.0);
-    let gpu_line = if CONFIG.vram_show_gb {
+    let gpu_line = if CONFIG.show_vram_gb {
         format!(
             "\x1b[{}m{}\x1b[0m \x1b[{}m{}\x1b[0m \x1b[{}m{:.2}GB\x1b[0m",
             title_color,
@@ -542,73 +648,79 @@ fn main() -> io::Result<()> {
             Print(format!("\x1b[{}mGpu:\x1b[0m", title_color))
         )?;
         info_y += 1;
-    }
-}
+    }}} 
 
-let results = ram_rx.recv().unwrap();
-
-let (total_bytes, max_speed, modules) = results.iter().fold((0u64, 0u32, 0u32), |(total, speed, count), mem| {
+    if CONFIG.show_ram {
+    let results = ram_rx.recv().unwrap();
+    let (total_bytes, max_speed, modules) = results.iter().fold((0u64, 0u32, 0u32), |(total, speed, count), mem| {
     let cap = mem.capacity.unwrap_or(0);
     let spd = mem.speed.unwrap_or(0);
     (total + cap, speed.max(spd), count + (cap > 0) as u32)
 });
 
-let total_gb = total_bytes as f64 / 1_073_741_824.0;
-let used_gb = get_used_ram_gb().expect("RAM info failed") as f64;
-let percent = if total_gb > 0.0 { used_gb * 100.0 / total_gb } else { 0.0 };
-let size_per_module = if modules > 0 { total_gb / modules as f64 } else { 0.0 };
+    let total_gb = total_bytes as f64 / 1_073_741_824.0;
+    let used_gb = get_used_ram_gb().expect("RAM info failed") as f64;
+    let percent = if total_gb > 0.0 { used_gb * 100.0 / total_gb } else { 0.0 };
+    let size_per_module = if modules > 0 { total_gb / modules as f64 } else { 0.0 };
 
-let output = if modules > 0 && CONFIG.show_ram_ext_info {
+    let output = if modules > 0 && CONFIG.show_ram_ext_info {
     format!(
         "\x1b[{}mRam:\x1b[0m \x1b[{}m{:.2}\x1b[0m \x1b[97m/\x1b[0m \x1b[{}m{:.2}gb ({:.0}%) ({}x{:.0}gb, {} MHz)\x1b[0m",
         title_color, info_color, used_gb, info_color, total_gb, percent, modules, size_per_module, max_speed
     )
-} else {
+    } else {
     format!(
         "\x1b[{}mRam:\x1b[0m \x1b[{}m{:.2}\x1b[0m \x1b[97m/\x1b[0m \x1b[{}m{:.2}gb ({:.0}%)\x1b[0m",
         title_color, info_color, used_gb, info_color, total_gb, percent
     )
-};
+    };
 
-execute!(
+    execute!(
     io::stdout(),
     MoveTo(art_width as u16, info_y),
     Print(output)
-)?; 
-info_y += 1;
 
-execute!(
+    )?;
+    info_y += 1;
+}
+
+    if CONFIG.show_swap {
+    execute!(
     io::stdout(),
     MoveTo(art_width as u16, info_y),
     Print(format!("\x1b[{}mSwap:\x1b[0m \x1b[{}m{:.2}gb\x1b[0m",title_color, info_color, get_swap_total_gb()))
 )?;
-info_y += 1;
+    info_y += 1;
+}
 
-let mut locale_name = [0u16; 85];
-unsafe {
+    if CONFIG.show_locale {
+    let mut locale_name = [0u16; 85];
+    unsafe {
     GetUserDefaultLocaleName(&mut locale_name);
 }
-let locale = String::from_utf16_lossy(&locale_name)
+    let locale = String::from_utf16_lossy(&locale_name)
     .trim_end_matches('\0')
     .to_string();
 
-execute!(
+    execute!(
     io::stdout(),
     MoveTo(art_width as u16, info_y),
     Print(format!("\x1b[{}mLocale:\x1b[0m \x1b[{}m{}\x1b[0m", title_color, info_color, locale))
 )?;
-info_y += 1;
+    info_y += 1;
+}
 
-let mut buffer = [0u16; 512];
-let size = unsafe { GetLogicalDriveStringsW(Some(&mut buffer)) };
+    if CONFIG.show_disk {
+    let mut buffer = [0u16; 512];
+    let size = unsafe { GetLogicalDriveStringsW(Some(&mut buffer)) };
 
-let drives = buffer[..size as usize]
-    .split(|&c| c == 0)
-    .filter(|d| !d.is_empty())
-    .map(String::from_utf16_lossy)
-    .collect::<Vec<_>>();
+    let drives = buffer[..size as usize]
+        .split(|&c| c == 0)
+        .filter(|d| !d.is_empty())
+        .map(String::from_utf16_lossy)
+        .collect::<Vec<_>>();
 
-    if CONFIG.show_disk_info {
+    if CONFIG.show_disk {
     if drives.is_empty() {
         execute!(
             io::stdout(),
@@ -616,26 +728,25 @@ let drives = buffer[..size as usize]
             Print(format!("\x1b[{}mDisk:\x1b[0m \x1b[{}merror :(\x1b[0m", title_color, info_color))
         )?;
         info_y += 1;
-        } else {
+    } else {
         let max_len = drives.iter().map(|d| d.len()).max().unwrap_or(3);
-        for (i, drive) in drives.iter().enumerate() {
+        for drive in drives.iter() {
             let (used, total) = get_drive_usage(drive);
-            let percent = if total > 0 {
-                (used as f64 / total as f64 * 100.0).round() as u64
-            } else {
-                0
-            };
-            let line = if i == 0 {
-                format!(
-                    "\x1b[{}mDisk:\x1b[0m \x1b[97m{:<width$}\x1b[0m \x1b[{}m{:>3}gb\x1b[0m \x1b[97m/\x1b[0m \x1b[{}m{:>3}gb ({}%)\x1b[0m",
-                    title_color, drive, info_color, used, info_color, total, percent, width = max_len
-                )
-            } else {
-                format!(
-                    "\x1b[{}mDisk:\x1b[0m \x1b[97m{:<width$}\x1b[0m \x1b[{}m{:>3}gb\x1b[0m \x1b[97m/\x1b[0m \x1b[{}m{:>3}gb ({}%)\x1b[0m",
-                    title_color, drive, info_color, used, info_color, total, percent, width = max_len
-                )
-            };
+            if total == 0 {
+                continue;
+            }
+            let percent = (used as f64 / total as f64 * 100.0).round() as u64;
+            let line = format!(
+                "\x1b[{}mDisk:\x1b[0m \x1b[97m{:<width$}\x1b[0m \x1b[{}m{:>3}gb\x1b[0m \x1b[97m/\x1b[0m \x1b[{}m{:>3}gb ({}%)\x1b[0m",
+                title_color,
+                drive,
+                info_color,
+                used,
+                info_color,
+                total,
+                percent,
+                width = max_len
+            );
             execute!(
                 io::stdout(),
                 MoveTo(art_width as u16, info_y),
@@ -645,44 +756,39 @@ let drives = buffer[..size as usize]
         }
     }
 }
-
+}
+    if CONFIG.show_color_scheme {
     info_y += 1;
-
- let top_colors = [0, 91, 92, 93, 94, 95, 96, 97];
+    let top_colors = [0, 91, 92, 93, 94, 95, 96, 97];
     let bottom_colors = [30, 31, 32, 33, 34, 35, 36, 37];
-    
-    let mut top_line = String::new();
-    for &color in &top_colors {
-    if color == 0 {
-        top_line.push_str("   ");
-    } else {
-        top_line.push_str(&format!("\x1b[{}m███\x1b[0m", color));
-    }
-}
 
-let mut bottom_line = String::new();
-for &color in &bottom_colors {
-    bottom_line.push_str(&format!("\x1b[{}m███\x1b[0m", color));
-}
+    let top_line: String = top_colors.iter()
+    .map(|&c| if c == 0 { "   ".to_string() } else { format!("\x1b[{}m███\x1b[0m", c) })
+    .collect();
 
-execute!(
+    let bottom_line: String = bottom_colors.iter()
+    .map(|&c| format!("\x1b[{}m███\x1b[0m", c))
+    .collect();
+
+    execute!(
     io::stdout(),
     MoveTo(art_width as u16, info_y),
-    Print(top_line),
+    Print(&top_line),
     MoveTo(art_width as u16, info_y + 1),
-    Print(bottom_line)
+    Print(&bottom_line)
 )?;
-info_y += 2;
-
-let max_y = y.max(info_y);
-execute!(
+    info_y += 2;
+}
+    let max_y = y.max(info_y);
+    execute!(
     io::stdout(),
     MoveTo(0, max_y as u16 + 1)
 )?;
 
-if is_launched_by_explorer() {
+    if is_launched_by_explorer() {
     println!("\nPress Enter to exit...");
     let _ = std::io::stdin().read_line(&mut String::new());
 }
-    Ok(())
+
+    Ok(())  
 }
