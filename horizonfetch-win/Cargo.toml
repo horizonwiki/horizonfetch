@@ -1,6 +1,6 @@
 [package]
 name = "horizonfetch"
-version = "0.3.0"
+version = "0.3.5-2"
 edition = "2021"
 
 [target.x86_64-pc-windows-msvc]
@@ -21,3 +21,7 @@ windows = { version = "0.61.1", features = ["Win32_Graphics_Dxgi", "Win32_Graphi
 serde = { version = "1.0", features = ["derive"] }
 winreg = "0.52"
 once_cell = "1.15.0"
+strip-ansi-escapes = "0.2.1"
+
+[build-dependencies]
+winres = "0.1"
