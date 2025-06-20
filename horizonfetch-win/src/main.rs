@@ -1,4 +1,4 @@
-// HorizonFetch (hf) || tg: @xd_sergii || github: https://github.com/horizonl1nux/horizonfetch || v0.3.5-2 || 16.06.2025
+// HorizonFetch (hf) || tg: @xd_sergii || github: https://github.com/horizonl1nux/horizonfetch || v0.35-2 || 16.06.2025
 use std::{fs, env, io};
 use std::io::stdout;
 use std::collections::HashMap;
