@@ -62,7 +62,7 @@ If `horizonfetch` is in your `$PATH`, you can use it directly:
 ```bash
 horizonfetch -help
 ```
-😎You can use both short (-flag) and long (-- flag) versions for most options:
+😎You can use both short (-flag) and long (--flag) versions for most options:
 ```
 -help  or --help
 ```
