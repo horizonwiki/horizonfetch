@@ -9,7 +9,7 @@
 
 <div align="left">
   <a href="https://github.com/user-attachments/assets/82bb9031-42c7-4c55-9058-341b739b22fc">
-    <img src="https://github.com/user-attachments/assets/82bb9031-42c7-4c55-9058-341b739b22fc" width="40%" style="margin: 6px; border-radius: 6px;" />
+    <img src="https://github.com/user-attachments/assets/82bb9031-42c7-4c55-9058-341b739b22fc" width="65%" style="margin: 8px; border-radius: 8px;" />
   </a>
 </div>
 
