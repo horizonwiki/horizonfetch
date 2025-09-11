@@ -1,7 +1,7 @@
 # horizonfetch
 [![Language](https://img.shields.io/badge/Rust-100%25-orange?style=plastic&logo=rust&logoColor=white&labelColor=5c5c5c)](https://github.com/horizonl1nux/horizonfetch/search?l=rust)
 ![release](https://img.shields.io/github/v/release/horizonl1nux/horizonfetch?label=release)
-[![License: GPLv3](https://img.shields.io/badge/LICENSE-GPLv3-blue?style=plastic&logo=gnu&logoColor=white&labelColor=5c5c5c)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: Apache 2.0](https://img.shields.io/badge/LICENSE-Apache_2.0-blue?style=plastic&logo=apache&logoColor=white&labelColor=5c5c5c)](https://opensource.org/licenses/Apache-2.0)
 ![Repo Size](https://img.shields.io/github/repo-size/horizonl1nux/horizonfetch)
 [![photo](https://repology.org/badge/tiny-repos/horizonfetch.svg)](https://repology.org/project/horizonfetch/versions)
 
