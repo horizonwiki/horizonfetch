@@ -25,7 +25,7 @@
 ## 👾Build from source
 ```
 download rustup
-cd horizonfetch-win
+git clone https://github.com/horizonwiki/horizonfetch/
 cargo build --release
 ```
 ⚠️ If you build the application yourself, it may require the **Microsoft Visual C++ Redistributable** to run.  
@@ -48,28 +48,7 @@ You can launch `horizonfetch` in several convenient ways:
   ```bash
   horizonfetch
   ```
-## Flags and Options
-
-To use flags, run the binary with the desired option:
-
-```bash
-./horizonfetch -help
-```
-
-If `horizonfetch` is in your `$PATH`, you can use it directly:
-
-
-```bash
-horizonfetch -help
-```
-😎You can use both short (-flag) and long (--flag) versions for most options:
-```
--help  or --help
-```
-😈For more advanced flags and new customization options, stay tuned — version `0.36-1` is coming soon...
-
-## Customization
-Soon...
+## P.S: I haven't forgotten about the project; there may be a major update coming soon.
 
   <a href="https://repology.org/project/horizonfetch/versions">
     <img src="https://repology.org/badge/vertical-allrepos/horizonfetch.svg?columns=2" alt="Repology status" height="45">

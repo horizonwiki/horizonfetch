@@ -1,16 +1,10 @@
 [package]
 name = "horizonfetch"
-version = "0.3.5-2"
+version = "0.35"
 edition = "2021"
-
-[target.x86_64-pc-windows-msvc]
-rustflags = ["-Ctarget-feature=+crt-static"]
-
-[profile.release]
-strip = "symbols"
-lto = true
-debug = false
-panic = "abort"
+license = "Apache-2.0"
+repository = "https://github.com/horizonwiki/fire"
+authors = ["horizonwiki"]
 
 [dependencies]
 crossterm = "0.29.0"

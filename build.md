@@ -1,8 +1,8 @@
 1) install rustup
-2) cd horizonfetch-win/
-3) cargo build --release
-4) cd target/release/
-5) find horizonfetch.exe
+2) git clone https://github.com/horizonwiki/horizonfetch/
+3) cd horizonfeth/
+4) cargo build --release
+5) target/release/horizonfetch
 
 goodluck)
 
