@@ -1,6 +1,6 @@
 [package]
 name = "horizonfetch"
-version = "0.35"
+version = "0.35.2"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/horizonwiki/fire"
@@ -19,3 +19,4 @@ strip-ansi-escapes = "0.2.1"
 
 [build-dependencies]
 winres = "0.1"
+
